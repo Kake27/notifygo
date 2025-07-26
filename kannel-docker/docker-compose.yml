@@ -1,0 +1,11 @@
+services:
+  kannel:
+    build: .
+    container_name: kannel
+    ports:
+      - "13000:13000"
+      - "13013:13013"
+    volumes:
+      - ./kannel.conf:/etc/kannel/kannel.conf
+    restart: unless-stopped
+

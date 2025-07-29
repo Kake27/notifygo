@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"net/url"
 	"io"
+	"notification-service/config"
 )
 
 
@@ -18,30 +19,25 @@ func (m *MockSMSService) Send(to, subject, message string) (string, error) {
 }
 
 type SMSService struct {
-	GatewayURL string
-	Username string 
-	Password string
-	Sender string
+
+	cfg config.SMSConfig
 }
 
-func NewSMSService(gatewayURL, username, password, sender string) *SMSService {
+func NewSMSService() *SMSService {
 	return &SMSService{
-		GatewayURL: gatewayURL,
-		Username: username,
-		Password: password,
-		Sender: sender,
+		cfg : config.GetSMSConfig(),
 	}
 }
 
 func (s *SMSService) Send(to, message string) (string, error) {
 	params := url.Values{}
-	params.Set("username", s.Username)
-    params.Set("password", s.Password)
+	params.Set("username", s.cfg.Username)
+    params.Set("password", s.cfg.Password)
     params.Set("to", to)
-	params.Set("from", s.Sender)
+	params.Set("from", s.cfg.Sender)
     params.Set("text", message)
 
-	finalURL := fmt.Sprintf("%s?%s", s.GatewayURL, params.Encode())
+	finalURL := fmt.Sprintf("%s?%s", s.cfg.GatewayURL, params.Encode())
 	resp, err := http.Get(finalURL)
     if err != nil {
         return "", fmt.Errorf("failed to send SMS: %w", err)

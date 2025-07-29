@@ -11,23 +11,28 @@ func main() {
 	app := gofr.New()
 
 	app.GET("/greet", func(ctx *gofr.Context) (any, error) {
-		return "Testing server!", nil
+		return "hello world", nil
 	})
 
+	// get health
 	healthHandler := handler.NewHealthHandler()
 	app.GET("/health", healthHandler.Health)
 
 
+	//email
 	emailSvc := service.NewEmailService()
-	smsSvc := service.NewSMSService(
-		"http://localhost:13013/cgi-bin/sendsms",
-		"test",         // username
-		"test123",      // password
-		"KANNEL",       // sender
-	) 
+
+	//sms
+	smsSvc := service.NewSMSService(	) 
+
+
+	//push
 	pushSvc := service.NewPushService()
 
+	//notification handler
 	notificationHandler := handler.NewNotificationHandler(emailSvc, smsSvc, pushSvc)
+
+	app.WebSocket("/ws/{userID}", notificationHandler.PushSocket)	
 	app.POST("/notify", notificationHandler.Notify)
 
 	

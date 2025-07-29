@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    container_name: go-notifier
+    ports:
+      - "8000:8000"
+    environment:
+      - SMTP_HOST=mailhog
+      - SMTP_PORT=1025
+      - SMTP_SENDER=test@example.com
+      - KANNEL_URL=http://kannel:13013/cgi-bin/sendsms
+      - KANNEL_USERNAME=test
+      - KANNEL_PASSWORD=test123
+      - KANNEL_SENDER=KANNEL
+    depends_on:
+      - mailhog
+      - kannel
+
+  mailhog:
+    image: mailhog/mailhog
+    container_name: mailhog
+    ports:
+      - "1025:1025"   # SMTP
+      - "8025:8025"   # Web UI
+
+  kannel:
+    build: ./kannel
+    container_name: kannel
+    ports:
+      - "13000:13000"
+      - "13013:13013"
+    volumes:
+      - ./kannel/kannel.conf:/etc/kannel/kannel.conf
+    restart: unless-stopped

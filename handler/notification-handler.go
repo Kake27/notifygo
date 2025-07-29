@@ -12,6 +12,10 @@ type NotificationHandler struct {
 	pushService *service.PushService
 }
 
+type PushSocket struct {
+
+}
+
 func NewNotificationHandler(e *service.EmailService, s *service.SMSService, p *service.PushService) *NotificationHandler {
 	return &NotificationHandler{
 		emailService: e,
@@ -55,11 +59,12 @@ func (h *NotificationHandler) Notify(ctx *gofr.Context) (interface{}, error) {
 	switch req.Type {
 	case "email":
 		err = h.emailService.Send(req.To, req.Subject, req.Message)
-	// to be added
+
 	case "sms":        
 		_, err = h.smsService.Send(req.To, req.Message)
-	// case "push":
-	// 	err = h.pushService.Send(req.To, req.Subject, req.Message)
+
+	case "push":
+		err = h.pushService.Send(req.To, req.Subject, req.Message)
 	default:
 		return nil, http.ErrorInvalidParam{Params: []string{"type"}}
 	}
@@ -69,4 +74,23 @@ func (h *NotificationHandler) Notify(ctx *gofr.Context) (interface{}, error) {
 	}
 
 	return map[string]string{"status": "notification sent succesfully"}, nil
+}
+
+func (h *NotificationHandler) PushSocket(ctx *gofr.Context) (any, error) {
+	userID := ctx.PathParam("userID")
+	ctx.Logger.Infof("Registered WebSocket client for clientID: %s", userID)
+	// ctx.Logger.Infof("🔥 Raw URL: %s", ctx.Request)
+	// ctx.Logger.Infof("🔥 Extracted userID: %s", userID)
+
+	h.pushService.RegisterClient(userID, ctx)
+	for {
+		var msg string
+		if err := ctx.Bind(&msg); err != nil {
+			break
+		}
+		ctx.Logger.Infof("Received from %s: %s", userID, msg)
+	}
+
+	return nil, nil
+
 }

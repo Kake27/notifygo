@@ -19,6 +19,7 @@ func NewPushService() *PushService {
 	}
 }
 
+
 func (p *PushService) RegisterClient(clientID string, ctx *gofr.Context) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
@@ -26,6 +27,7 @@ func (p *PushService) RegisterClient(clientID string, ctx *gofr.Context) {
 	p.clients[clientID] = ctx
 	log.Printf("Registed WebSocket client for clientID: %s", clientID)
 }
+
 
 func (p *PushService) Send(to, subject, message string) error {
 	p.mu.Lock()

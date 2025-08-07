@@ -19,8 +19,10 @@ func NewEmailService() *EmailService {
 func (e *EmailService) Send(to, subject, message string) error {
 	addr := e.cfg.Address()
 
+	auth := smtp.PlainAuth("", e.cfg.Username, e.cfg.Password, e.cfg.Host)
+
 	msg := []byte(fmt.Sprintf("To: %s\r\nSubject: %s\r\n\r\n%s", to, subject, message))
-	err := smtp.SendMail(addr, nil, e.cfg.Sender, []string{to}, msg)
+	err := smtp.SendMail(addr, auth, e.cfg.Sender, []string{to}, msg)
 	if err != nil {
 		return fmt.Errorf("failed to send email: %w", err)  
 	}

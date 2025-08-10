@@ -44,6 +44,7 @@ docker compose up --build
 This will start:
 - notification-service (your Go app)
 - MailHog for email testing at localhost:8025
+- GMail SMTP is used for sending the real emails
 - Kannel for SMS delivery on port 13013
 ---
 
@@ -90,16 +91,59 @@ Connect to WebSocket endpoint for real-time push notifications:
 ws://localhost:8000/ws/{userID}
 ```
 
-**WebSocket Management Endpoints:**
-- `GET /ws/clients` - Get list of connected clients
-- `POST /ws/broadcast` - Send notification to all connected clients
+---
+## 📄 Templates Management
+The Notification Service supports **templated messages with dynamic variables** for notifications.  
+Templates are stored in **PostgreSQL** and can be created, deleted, and used dynamically via API endpoints or can be stored as **.tmpl** files in the `store/templates/` folder.
+
+### **1️⃣ Create a Template**
+**Endpoint:**  
+```http
+POST /template/create
+```
+
+**Body:**
+```json
+{
+  "name": "template_name",
+  "content": "Hello {{.variable_name1}}, welcome to our platform! Your account ID is {{.variable_name2}}."
+}
+```
+
+### **2️⃣ Delete a Template**
+**Endpoint:**  
+```http
+DELETE /template/delete/{template_name}
+```
+
+### **3️⃣ Using a Template in Notification**
+An example of using a template is:
+**Endpoint:**
+```http
+POST /notify
+```
+
+**Body:**
+```json
+{
+  "type": "email",
+  "to": "user@example.com",
+  "template": "template_name",
+  "vars": {
+    "name": "John Doe",
+    "account_id": "ACC12345"
+  }
+}
+```
+
+Altervatively, if the content is stored in a **.tmpl** file in the above mentioned directory, the name of the file may be passed in the `"template:"` field in the request body along with the variables.
 
 ---
 
 ## 🧪 Testing Endpoints
 Check if service is alive:
 - `GET /health` → Returns whether the SMTP server for sending emails is online
-- Basic test route: `GET /greet` → Returns "Hello from the server!" if the app is online.
+- Basic test route: `GET /greet` → Returns "Hello World!" if the app is online.
 
 
 ---

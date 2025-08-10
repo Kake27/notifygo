@@ -72,6 +72,28 @@ POST `/notify`
 ```
 This uses the Kannel HTTP API behind the scenes for delivery. For now, the SMS is only being queued for delivery rather than actually being sent.
 
+### 3. 🔔 Send Push Notification
+POST `/notify`
+```json
+{
+  "type": "push",
+  "to": "user123",
+  "subject": "Important Update",
+  "message": "You have a new notification!"
+}
+```
+**Note**: The user must be connected via WebSocket to receive push notifications.
+
+### 4. 🌐 WebSocket Connection
+Connect to WebSocket endpoint for real-time push notifications:
+```
+ws://localhost:8000/ws/{userID}
+```
+
+**WebSocket Management Endpoints:**
+- `GET /ws/clients` - Get list of connected clients
+- `POST /ws/broadcast` - Send notification to all connected clients
+
 ---
 
 ## 🧪 Testing Endpoints
@@ -79,14 +101,16 @@ Check if service is alive:
 - `GET /health` → Returns whether the SMTP server for sending emails is online
 - Basic test route: `GET /greet` → Returns "Hello from the server!" if the app is online.
 
+
 ---
 
 ## 🧰 Tech Stack
 - **Language:** Golang
-- **Framework:** GoFr
-- **Email Delivery:** MailHog via SMTP
+- **Framework:** GoFr, Gorilla WebSocket
+- **Email Delivery:** MailHog (for testing) and GMail SMTP (for actual sending)
 - **SMS Delivery:** Kannel Gateway
-- **Real-Time Alerts:** WebSocket 
+- **Push Notifications:** WebSocket 
 - **Containerization:** Docker, Docker Compose
+- **Database:** PostgreSQL (for template storage & management)  
 
 

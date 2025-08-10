@@ -5,9 +5,9 @@ import (
 	"notification-service/handler"
 	"notification-service/service"
 	"notification-service/store"
+	"notification-service/ws"
 	"gofr.dev/pkg/gofr"
 )
-
 
 func main() {
 	app := gofr.New()
@@ -36,20 +36,21 @@ func main() {
 	// render templates
 	templateRenderer := service.NewTemplateRenderer(fileTemplateStore, dbTemplateStore)
 
-
 	//email
 	emailSvc := service.NewEmailService()
 
 	//sms
-	smsSvc := service.NewSMSService() 
+	smsSvc := service.NewSMSService()
 
-	//push
+	// push
 	pushSvc := service.NewPushService()
+
+	// WebSocket server for push notifications
+	ws.StartServer(":8081", pushSvc)
+
 
 	//notification handler
 	notificationHandler := handler.NewNotificationHandler(emailSvc, smsSvc, pushSvc, templateRenderer, dbTemplateStore)
-
-	app.WebSocket("/ws/{userID}", notificationHandler.PushSocket)	
 
 	// notify route
 	app.POST("/notify", notificationHandler.Notify)
@@ -57,6 +58,8 @@ func main() {
 	// create and delete templated messages
 	app.POST("/template/create", notificationHandler.CreateTemplate)
 	app.DELETE("/template/delete/{name}", notificationHandler.DeleteTemplate)
+
+
 
 	app.Run()
 }

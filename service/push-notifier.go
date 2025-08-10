@@ -4,38 +4,52 @@ import (
 	"fmt"
 	"log"
 	"sync"
-
-	"gofr.dev/pkg/gofr"
+	"time"
+	"github.com/gorilla/websocket"
 )
 
 type PushService struct {
-	clients map[string]*gofr.Context
-	mu      sync.Mutex
+	clients map[string]*websocket.Conn
+	mu      sync.RWMutex
 }
 
 func NewPushService() *PushService {
 	return &PushService{
-		clients: make(map[string]*gofr.Context),
+		clients: make(map[string]*websocket.Conn),
 	}
 }
 
-
-func (p *PushService) RegisterClient(clientID string, ctx *gofr.Context) {
+func (p *PushService) RegisterClient(userID string, conn *websocket.Conn) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
-	p.clients[clientID] = ctx
-	log.Printf("Registed WebSocket client for clientID: %s", clientID)
+	// close previous if exists
+	if old, ok := p.clients[userID]; ok {
+		_ = old.Close()
+	}
+
+	p.clients[userID] = conn
+	log.Printf("Registered WS client for userID=%s", userID)
 }
 
-
-func (p *PushService) Send(to, subject, message string) error {
+func (p *PushService) UnregisterClient(userID string) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
-	clientCtx, ok := p.clients[to]
-	if !ok {
-		return fmt.Errorf("user %s is not connected to WebSocket", to)
+	if conn, ok := p.clients[userID]; ok {
+		_ = conn.Close()
+		delete(p.clients, userID)
+		log.Printf("Unregistered WS client for userID=%s", userID)
+	}
+}
+
+func (p *PushService) Send(userID, subject, message string) error {
+	p.mu.RLock()
+	conn, ok := p.clients[userID]
+	p.mu.RUnlock()
+
+	if !ok || conn == nil {
+		return fmt.Errorf("user %s is not connected to WebSocket", userID)
 	}
 
 	payload := map[string]string{
@@ -44,5 +58,12 @@ func (p *PushService) Send(to, subject, message string) error {
 		"message": message,
 	}
 
-	return clientCtx.WriteMessageToSocket(payload)
+	_ = conn.SetWriteDeadline(time.Now().Add(5 * time.Second))
+	if err := conn.WriteJSON(payload); err != nil {
+		log.Printf("error writing to %s: %v — unregistering", userID, err)
+		p.UnregisterClient(userID)
+		return err
+	}
+
+	return nil
 }
